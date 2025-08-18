@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Face Attendance{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="bg-white p-6 border-l-4 border-blue-500 card">
+    <p class="text-gray-600 text-sm">Tổng Nhân Viên</p>
+    <p class="text-3xl font-bold text-blue-600">{{ total_employees }}</p>
+  </div>
+  <div class="bg-white p-6 border-l-4 border-green-500 card">
+    <p class="text-gray-600 text-sm">Chấm Công Hôm Nay</p>
+    <p class="text-3xl font-bold text-green-600">{{ today_logs }}</p>
+  </div>
+  <div class="bg-white p-6 border-l-4 border-yellow-500 card">
+    <p class="text-gray-600 text-sm">Đi Muộn Hôm Nay</p>
+    <p class="text-3xl font-bold text-yellow-600">{{ late_today }}</p>
+  </div>
+  <div class="bg-white p-6 border-l-4 border-red-500 card">
+    <p class="text-gray-600 text-sm">Khác</p>
+    <p class="text-3xl font-bold text-red-600">0</p>
+  </div>
+</div>
+
+<div class="bg-white card p-6">
+  <h3 class="text-xl font-bold text-gray-800 mb-4">Hoạt Động Gần Đây</h3>
+  {% if recent %}
+    <div class="space-y-3">
+      {% for r in recent %}
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+        <div class="flex-1">
+          <p class="text-gray-800">
+            {{ r[0] }} — {{ r[3] }} — <span class="font-medium">{{ r[2] }}</span>
+          </p>
+          <p class="text-xs text-gray-500">{{ r[1] }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-gray-500 text-center py-10">Chưa có hoạt động nào</div>
+  {% endif %}
+</div>
+{% endblock %}

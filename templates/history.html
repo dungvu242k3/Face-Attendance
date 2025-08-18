@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Lịch sử chấm công - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="bg-white card p-6">
+  <h3 class="text-xl font-bold text-gray-800 mb-6">Lịch Sử Chấm Công</h3>
+
+  {% if logs %}
+  <div class="mb-4 flex flex-col md:flex-row items-start md:items-center gap-4">
+    <select id="filterType" class="border border-gray-300 rounded-lg px-3 py-2">
+      <option value="">Tất cả</option>
+      <option value="checkin">Check-in</option>
+      <option value="checkout">Check-out</option>
+    </select>
+
+    <input type="text" id="searchName" placeholder="Tìm theo tên nhân viên"
+           class="border border-gray-300 rounded-lg px-3 py-2 flex-1">
+  </div>
+
+  <div class="overflow-x-auto">
+    <table id="historyTable" class="min-w-full text-left">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-3">ID</th>
+          <th class="px-4 py-3">Emp ID</th>
+          <th class="px-4 py-3">Tên</th>
+          <th class="px-4 py-3">Thời gian</th>
+          <th class="px-4 py-3">Trạng thái</th>
+          <th class="px-4 py-3">Loại</th>
+          <th class="px-4 py-3">Ảnh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in logs %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-3">{{ row[0] }}</td>
+          <td class="px-4 py-3">{{ row[1] }}</td>
+          <td class="px-4 py-3">{{ row[2] }}</td>
+          <td class="px-4 py-3">{{ row[3] }}</td>
+          <td class="px-4 py-3">{{ row[4] or "-" }}</td>
+          <td class="px-4 py-3">{{ row[6] or "-" }}</td>
+          <td class="px-4 py-3">
+            {% if row[5] %}
+              <a class="text-blue-600 hover:underline" href="{{ row[5] }}" target="_blank">Xem</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="text-gray-500 text-center py-10">Chưa có log chấm công</div>
+  {% endif %}
+</div>
+
+<script>
+function filterTable() {
+  const filterType = document.getElementById('filterType').value.toLowerCase();
+  const searchName = document.getElementById('searchName').value.toLowerCase();
+
+  const rows = document.querySelectorAll('#historyTable tbody tr');
+
+  rows.forEach(row => {
+    const name = row.cells[2].textContent.toLowerCase();
+    const type = row.cells[5].textContent.toLowerCase(); 
+
+    let show = true;
+
+    if(filterType && type !== filterType) show = false;
+    if(searchName && !name.includes(searchName)) show = false;
+
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+document.getElementById('searchName').addEventListener('input', filterTable);
+document.getElementById('filterType').addEventListener('change', filterTable);
+</script>
+
+{% endblock %}

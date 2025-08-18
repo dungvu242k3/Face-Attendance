@@ -1,0 +1,11 @@
+Flask
+psycopg2-binary
+facenet-pytorch
+ultralytics
+opencv-python-headless
+numpy
+Pillow
+tqdm
+python-dotenv
+Werkzeug
+gunicorn

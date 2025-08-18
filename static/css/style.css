@@ -1,0 +1,110 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fb;
+  text-align: center;
+}
+
+.container {
+  margin-top: 30px;
+}
+
+.camera-box {
+  display: inline-block;
+  border: 4px solid #007bff;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+#video {
+  width: 500px;
+  height: auto;
+}
+
+#checkin-btn {
+  padding: 10px 20px;
+  font-size: 18px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+
+#checkout-btn {
+  padding: 10px 20px;
+  font-size: 18px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+
+#checkin-btn:hover {
+  background: #0056b3;
+}
+
+#checkout-btn:hover {
+  background: #0056b3;
+}
+
+.button_group {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+#result {
+  margin: 20px auto;
+}
+
+#checkin-btn:active,
+#checkout-btn:active {
+  transform: scale(0.95);
+  background-color: #003d80;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.button {
+  position: relative;
+  overflow: hidden;
+  padding: 10px 20px;
+  font-size: 18px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.button:hover {
+  background: #0056b3;
+}
+
+.button::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0; left: 0;
+  background: rgba(255, 255, 255, 0.5);
+  transform: scale(0);
+  transition: transform 0.4s ease;
+  border-radius: inherit;
+}
+
+.button:active::after {
+  transform: scale(2);
+  opacity: 0;
+}
+#previewWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+

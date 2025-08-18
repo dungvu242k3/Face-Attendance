@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chấm công</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Hệ thống chấm công</h1>
+
+    <div class="camera-box">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <div id="result">
+      <h2 id="employee-name">Chưa nhận diện</h2>
+      <p id="status"></p>
+    </div>
+
+    <div class="button_group">
+      <button id="checkin-btn" class="button">Checkin</button>
+      <button id="checkout-btn" class="button">Checkout</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

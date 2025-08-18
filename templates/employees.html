@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Nhân viên - Face Attendance{% endblock %}
+
+{% block content %}
+<div class="bg-white card p-6">
+
+  <div class="flex justify-between items-center mb-6">
+    <h3 class="text-xl font-bold text-gray-800">Danh Sách Nhân Viên</h3>
+
+    <div class="flex space-x-2">
+      <input type="text" id="searchName" placeholder="Tìm theo tên..."
+             class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+      <select id="filterPosition" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        <option value="">Tất cả chức vụ</option>
+        {% for pos in positions %}
+          <option value="{{ pos }}">{{ pos }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  {% if employees %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-left">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-3">ID</th>
+          <th class="px-4 py-3">Tên</th>
+          <th class="px-4 py-3">Email</th>
+          <th class="px-4 py-3">SĐT</th>
+          <th class="px-4 py-3">Chức vụ</th>
+          <th class="px-4 py-3">Ngày tạo</th>
+          <th class="px-4 py-3">Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for emp in employees %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-3">{{ emp[0] }}</td>
+          <td class="px-4 py-3 font-medium">{{ emp[1] }}</td>
+          <td class="px-4 py-3">{{ emp[2] or "-" }}</td>
+          <td class="px-4 py-3">{{ emp[3] or "-" }}</td>
+          <td class="px-4 py-3">{{ emp[4] or "-" }}</td>
+          <td class="px-4 py-3 text-sm text-gray-500">{{ emp[5] }}</td>
+          <td class="px-4 py-3">
+            <a href="{{ url_for('edit_employee', emp_id=emp[0]) }}" class="text-blue-600 hover:underline">✏️ Sửa</a>
+            <button class="delete-btn text-red-600 hover:underline ml-2" data-emp-id="{{ emp[0] }}">🗑️ Xóa</button>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-gray-500 text-center py-10">Chưa có nhân viên nào</div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  const nameInput = document.getElementById('searchName');
+  const positionSelect = document.getElementById('filterPosition');
+
+  function filterEmployees() {
+    const name = nameInput.value.toLowerCase();
+    const position = positionSelect.value;
+    const rows = document.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+      const rowName = row.children[1].textContent.toLowerCase();
+      const rowPosition = row.children[4].textContent;
+
+      const matchName = rowName.includes(name);
+      const matchPosition = !position || rowPosition === position;
+
+      row.style.display = matchName && matchPosition ? '' : 'none';
+    });
+  }
+
+  nameInput.addEventListener('input', filterEmployees);
+  positionSelect.addEventListener('change', filterEmployees);
+
+  const deleteButtons = document.querySelectorAll('.delete-btn');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const empId = this.getAttribute('data-emp-id');
+      if (!confirm("Bạn có chắc muốn xóa nhân viên này?")) return;
+
+      fetch(`/admin/delete_employee/${empId}`, { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            this.closest('tr').remove();
+            filterEmployees();
+          } else {
+            alert(data.message || "Xóa thất bại");
+          }
+        })
+        .catch(() => alert("Lỗi kết nối, thử lại sau"));
+    });
+  });
+
+});
+</script>
+{% endblock %}
