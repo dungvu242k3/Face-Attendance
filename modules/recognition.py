@@ -5,10 +5,7 @@ import numpy as np
 
 class FaceRecognizer:
     def __init__(self, database, threshold=0.7):
-        """
-        database: đối tượng FaceDatabase
-        threshold: ngưỡng nhận diện (cosine distance)
-        """
+
         self.database = database
         self.threshold = threshold
 
@@ -26,14 +23,12 @@ class FaceRecognizer:
         if not results:
             return None, "Unknown", None, None
 
-    # results[0] có thể chỉ trả về 3 giá trị
         if len(results[0]) == 3:
             person_name, filename, distance = results[0]
             employee_id = None
         elif len(results[0]) == 4:
             employee_id, person_name, filename, distance = results[0]
         else:
-        # trường hợp lạ, trả về mặc định
             return None, "Unknown", None, None
 
         if distance <= self.threshold:
