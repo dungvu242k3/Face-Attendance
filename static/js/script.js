@@ -44,14 +44,14 @@ function showResult(result) {
 checkinBtn.addEventListener('click', async () => {
   statusEl.textContent = "Đang xử lý Checkin...";
   const imgData = captureImage();
-  const result = await sendForRecognition(imgData, 'Checkin');
+  const result = await sendForRecognition(imgData, 'checkin');
   showResult(result);
 });
 
 checkoutBtn.addEventListener('click', async () => {
   statusEl.textContent = "Đang xử lý Checkout...";
   const imgData = captureImage();
-  const result = await sendForRecognition(imgData, 'Checkout');
+  const result = await sendForRecognition(imgData, 'checkout');
   showResult(result);
 });
 
