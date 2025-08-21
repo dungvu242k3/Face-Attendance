@@ -43,7 +43,12 @@ def preprocess_for_liveness(face_img):
 
 def log_attendance(employee_id, name, check_type, image_path=None):
     check_time = datetime.now()
-    status = "Present" if check_time.hour < 9 else "Late"
+    if check_type == "checkin" :
+        status = "present" if check_time.hour < 9 else "late"
+    elif check_type == "checkout":
+        status = "present" if check_time.hour < 18 else "late"
+    else :
+        status = "Unknowm"
     try:
         cur = db.conn.cursor()
         cur.execute(
