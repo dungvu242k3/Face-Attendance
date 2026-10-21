@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}Admin - Face Attendance{% endblock %}</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .card { border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
@@ -31,10 +32,14 @@
       </div>
 
       <nav class="flex items-center space-x-2">
-        <a href="{{ url_for('dashboard') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">📊 Dashboard</a>
-        <a href="{{ url_for('employees') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">👥 Nhân viên</a>
-        <a href="{{ url_for('add_employee') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">➕ Thêm</a>
-        <a href="{{ url_for('attendance_history') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">🕑 Lịch sử</a>
+        <a href="{{ url_for('admin.dashboard') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">📊 Dashboard</a>
+        <a href="{{ url_for('admin.employees') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">👥 Nhân viên</a>
+        <a href="{{ url_for('admin.add_employee') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">➕ Thêm</a>
+        <a href="{{ url_for('admin.attendance_history') }}" class="px-4 py-2 rounded-lg hover:bg-blue-50 text-blue-700 font-medium">🕑 Lịch sử</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="px-4 py-2 rounded-lg hover:bg-red-50 text-red-700 font-medium">Đăng xuất</button>
+        </form>
       </nav>
     </div>
   </header>

@@ -34,14 +34,14 @@
         {% for row in logs %}
         <tr class="border-b hover:bg-gray-50">
           <td class="px-4 py-3">{{ row[0] }}</td>
-          <td class="px-4 py-3">{{ row[1] }}</td>
+          <td class="px-4 py-3">{{ row[1] or "-" }}</td>
           <td class="px-4 py-3">{{ row[2] }}</td>
           <td class="px-4 py-3">{{ row[3] }}</td>
           <td class="px-4 py-3">{{ row[4] or "-" }}</td>
           <td class="px-4 py-3">{{ row[6] or "-" }}</td>
           <td class="px-4 py-3">
             {% if row[5] %}
-              <a class="text-blue-600 hover:underline" href="{{ row[5] }}" target="_blank">Xem</a>
+              <a class="text-blue-600 hover:underline" href="{{ row[5] }}" target="_blank" rel="noreferrer">Xem</a>
             {% else %}
               -
             {% endif %}
@@ -57,28 +57,5 @@
   {% endif %}
 </div>
 
-<script>
-function filterTable() {
-  const filterType = document.getElementById('filterType').value.toLowerCase();
-  const searchName = document.getElementById('searchName').value.toLowerCase();
-
-  const rows = document.querySelectorAll('#historyTable tbody tr');
-
-  rows.forEach(row => {
-    const name = row.cells[2].textContent.toLowerCase();
-    const type = row.cells[5].textContent.toLowerCase(); 
-
-    let show = true;
-
-    if(filterType && type !== filterType) show = false;
-    if(searchName && !name.includes(searchName)) show = false;
-
-    row.style.display = show ? '' : 'none';
-  });
-}
-
-document.getElementById('searchName').addEventListener('input', filterTable);
-document.getElementById('filterType').addEventListener('change', filterTable);
-</script>
-
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
 {% endblock %}

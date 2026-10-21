@@ -1,49 +1,52 @@
-import numpy as np
-import psycopg2
+"""Database connection management.
+
+Repositories use :class:`Database.transaction` so every request gets its own
+connection from a thread-safe pool and transactions are always committed or
+rolled back in one place.
+"""
+
+from __future__ import annotations
+
+from contextlib import contextmanager
+from typing import Any, Iterator
+
+from psycopg2.pool import ThreadedConnectionPool
+
+from config import Settings
 
 
-class FaceDatabase:
-    def __init__(self, table_name="face_embeddings_512",
-                 dbname="face_db", user="postgres", password="sat24042003", host="localhost", port=5432):
-        self.table_name = table_name
-        self.conn = psycopg2.connect(
-            dbname=dbname,
-            user=user,
-            password=password,
-            host=host,
-            port=port
+class Database:
+    """Small transaction boundary around a psycopg2 connection pool."""
+
+    def __init__(self, settings: Settings):
+        max_connections = max(settings.db_min_connections, settings.db_max_connections)
+        self._pool = ThreadedConnectionPool(
+            minconn=settings.db_min_connections,
+            maxconn=max_connections,
+            dbname=settings.db_name,
+            user=settings.db_user,
+            password=settings.db_password,
+            host=settings.db_host,
+            port=settings.db_port,
+            sslmode=settings.db_sslmode,
+            **(
+                {"sslrootcert": settings.db_sslrootcert}
+                if settings.db_sslrootcert
+                else {}
+            ),
         )
-        self.cur = self.conn.cursor()
 
-    def add_face(self, person_name, embedding, filename=None):
-        if isinstance(embedding, np.ndarray):
-            embedding_str = "[" + ",".join(map(str, embedding.astype(np.float32))) + "]"
-        else:
-            embedding_str = "[" + ",".join(map(str, embedding.cpu().numpy().astype(np.float32))) + "]"
+    @contextmanager
+    def transaction(self) -> Iterator[Any]:
+        connection = self._pool.getconn()
+        try:
+            yield connection
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            self._pool.putconn(connection, close=bool(connection.closed))
 
-        self.cur.execute(
-            f"INSERT INTO {self.table_name} (person_name, embedding, filename) VALUES (%s, %s, %s)",
-            (person_name, embedding_str, filename)
-        )
-        self.conn.commit()
-
-    def search_face(self, embedding, top_k=1):
-        if isinstance(embedding, np.ndarray):
-            embedding_str = "[" + ",".join(map(str, embedding.astype(np.float32))) + "]"
-        else:
-            embedding_str = "[" + ",".join(map(str, embedding.cpu().numpy().astype(np.float32))) + "]"
-
-        self.cur.execute(
-            f"""
-            SELECT person_name, filename, embedding <=> %s AS distance
-            FROM {self.table_name}
-            ORDER BY distance ASC
-            LIMIT {top_k}
-            """,
-            (embedding_str,)
-        )
-        return self.cur.fetchall()
-
-    def close(self):
-        self.cur.close()
-        self.conn.close()
+    def close(self) -> None:
+        self._pool.closeall()

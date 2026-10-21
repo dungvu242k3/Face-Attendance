@@ -1,40 +1,59 @@
-from turtle import distance
+"""Face embedding matching use case."""
 
-import numpy as np
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, Protocol
+
+from modules.embedding_utils import as_embedding_array
+
+
+class FaceSearchRepository(Protocol):
+    def search(self, embedding: Any, top_k: int = 1) -> list[tuple[Any, ...]]: ...
+
+
+@dataclass(frozen=True)
+class RecognitionMatch:
+    employee_id: int | None
+    name: str
+    distance: float | None
+    confidence: float | None
+    filename: str | None = None
+
+    @property
+    def is_known(self) -> bool:
+        return self.name != "Unknown" and self.employee_id is not None
 
 
 class FaceRecognizer:
-    def __init__(self, database, threshold=0.7):
-
+    def __init__(self, database: FaceSearchRepository, threshold: float = 0.6):
         self.database = database
         self.threshold = threshold
 
-    def recognize(self, embedding):
+    def recognize(self, embedding: Any) -> RecognitionMatch:
         if embedding is None:
-            return None, "Unknown", None, None
+            return RecognitionMatch(None, "Unknown", None, None)
 
-        if not isinstance(embedding, np.ndarray):
-            if hasattr(embedding, 'cpu'):
-                embedding = embedding.cpu().numpy()
-            else:
-                embedding = np.array(embedding)
-
-        results = self.database.search_face(embedding, top_k=1)
+        embedding_array = as_embedding_array(embedding)
+        results = self.database.search(embedding_array, top_k=1)
         if not results:
-            return None, "Unknown", None, None
+            return RecognitionMatch(None, "Unknown", None, None)
 
-        if len(results[0]) == 3:
-            person_name, filename, distance = results[0]
-            employee_id = None
-        elif len(results[0]) == 4:
-            employee_id, person_name, filename, distance = results[0]
-        else:
-            return None, "Unknown", None, None
-
+        employee_id, person_name, filename, raw_distance = results[0]
+        distance = float(raw_distance)
+        confidence = max(0.0, 1.0 - distance)
         if distance <= self.threshold:
-            confidence = 1 - distance
-            return employee_id, person_name, distance, confidence
-        else:
-            return None, "Unknown", distance, 1 - distance
-
-
+            return RecognitionMatch(
+                employee_id=employee_id,
+                name=person_name,
+                distance=distance,
+                confidence=confidence,
+                filename=filename,
+            )
+        return RecognitionMatch(
+            employee_id=None,
+            name="Unknown",
+            distance=distance,
+            confidence=confidence,
+            filename=filename,
+        )

@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta name="user-api-token" content="{{ api_token }}">
   <title>Chấm công</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -23,6 +24,7 @@
       <button id="checkin-btn" class="button">Checkin</button>
       <button id="checkout-btn" class="button">Checkout</button>
     </div>
+
   </div>
 
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>

@@ -108,3 +108,21 @@ body {
   gap: 10px;
 }
 
+.table-wrap {
+  overflow-x: auto;
+  margin: 20px auto;
+}
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+

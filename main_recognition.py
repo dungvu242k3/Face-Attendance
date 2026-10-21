@@ -1,111 +1,105 @@
+"""Optional local webcam recognition client."""
+
+from __future__ import annotations
+
 import cv2
 import numpy as np
-import torch
 from PIL import Image, ImageDraw, ImageFont
 
+from config import Settings
 from modules.camera import Camera
-from modules.database import FaceDatabase
-from modules.detector import FaceDetector
-from modules.livenessnet import LivenessNet
-from modules.recognition import FaceRecognizer
+from modules.service_container import build_services
 
 
-def draw_text_unicode(frame, text, position, font_size=20, color=(0, 255, 0)):
-    img_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-    font = ImageFont.truetype("arial.ttf", font_size)
-    draw = ImageDraw.Draw(img_pil)
-    draw.text(position, text, font=font, fill=color)
-    return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+def draw_text_unicode(
+    frame: np.ndarray,
+    text: str,
+    position: tuple[int, int],
+    font_size: int = 20,
+    color: tuple[int, int, int] = (0, 255, 0),
+) -> np.ndarray:
+    image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    try:
+        font = ImageFont.truetype("arial.ttf", font_size)
+    except OSError:
+        font = ImageFont.load_default()
+    draw = ImageDraw.Draw(image)
+    rgb_color = (color[2], color[1], color[0])
+    draw.text(position, text, font=font, fill=rgb_color)
+    return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
 
-def preprocess_for_liveness(face_img):
-    img = cv2.resize(face_img, (32, 32))
-    img = img.astype("float32") / 255.0
-    img = np.transpose(img, (2, 0, 1))  # C x H x W
-    return torch.tensor(img).unsqueeze(0)
+def _register_unknown(
+    services, unknown_faces: list[tuple[np.ndarray, np.ndarray]]
+) -> None:
+    print("\nNhập tên cho các khuôn mặt chưa biết:")
+    for index, (embedding, face_img) in enumerate(unknown_faces, start=1):
+        window_name = f"Unknown Face {index}"
+        cv2.imshow(window_name, face_img)
+        name = input(f"Nhập tên cho {window_name}: ").strip()
+        if name:
+            services.employee_service.create_with_face(
+                name=name,
+                email=None,
+                phone=None,
+                position=None,
+                embedding=embedding,
+                filename=f"capture_{index}.jpg",
+            )
+            print(f"Đã thêm {name} vào PostgreSQL.")
+        cv2.destroyWindow(window_name)
 
 
-def main():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    detector = FaceDetector(device)
-
-    database = FaceDatabase(
-        dbname="face_db",
-        user="postgres",
-        password="sat24042003",
-        host="localhost",
-        port=5432
-    )
-
-    liveness_detector = LivenessNet(width=32, height=32, depth=3, classes=2)
-    checkpoint = torch.load("./models/best.pth", map_location=device)
-    liveness_detector.load_state_dict(checkpoint["model_state_dict"])
-    liveness_detector.to(device)
-    liveness_detector.eval()
-
-    recognizer = FaceRecognizer(database, threshold=0.6)
+def main() -> None:
+    settings = Settings.from_env()
+    services = build_services(settings, with_liveness=True)
     camera = Camera()
+    unknown_faces: list[tuple[np.ndarray, np.ndarray]] = []
 
-    while True:
-        ret, frame = camera.read_frame()
-        if not ret:
-            break
+    try:
+        while True:
+            ok, frame = camera.read_frame()
+            if not ok:
+                break
 
-        boxes = detector.detect_faces(frame)
-        faces = detector.extract_faces(frame, boxes) if boxes else []
+            boxes = services.detector.detect_faces(frame)
+            for box in boxes:
+                face_img = services.detector.crop_face(frame, box)
+                if face_img is None:
+                    continue
 
-        unknown_faces = []
+                if not services.liveness.is_real(face_img):
+                    name = "FAKE"
+                    color = (0, 0, 255)
+                else:
+                    embedding = services.detector.get_embeddings(face_img)
+                    match = services.recognizer.recognize(embedding)
+                    if match.is_known:
+                        name = match.name
+                        color = (0, 255, 0)
+                    else:
+                        name = f"Unknown{len(unknown_faces) + 1}"
+                        color = (0, 255, 255)
+                        unknown_faces.append((embedding, face_img.copy()))
 
-        for box, face_img in zip(boxes, faces):
-            embedding =  detector.get_embeddings(face_img)
-            face_tensor = preprocess_for_liveness(face_img).to(device)
+                x1, y1, x2, y2 = map(int, box)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                frame = draw_text_unicode(
+                    frame, name, (x1, max(0, y1 - 25)), color=color
+                )
 
-            with torch.no_grad():
-                output = liveness_detector(face_tensor)
-                pred = torch.argmax(output, dim=1).item()
-                is_real = (pred == 1)
-
-            if not is_real:
-                name = "FAKE"
-                color = (0, 0, 255)
-            else:
-                name, dist, conf = recognizer.recognize(embedding)
-                color = (0, 255, 0) if name != "Unknown" else (0, 255, 255)
-
-            if name == "Unknown":
-                label = f"Unknown{len(unknown_faces) + 1}"
-                unknown_faces.append((embedding, face_img))
-            else:
-                label = name
-
-            x1, y1, x2, y2 = map(int, box)
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            frame = draw_text_unicode(frame, label, (x1, y1 - 25), font_size=20, color=color)
-
-        cv2.imshow("Face Recognition", frame)
-        key = cv2.waitKey(1) & 0xFF
-
-        if key == ord("a") and unknown_faces:
-            print("\nNhập tên cho các khuôn mặt chưa biết:")
-            for idx, (embedding, face_img) in enumerate(unknown_faces):
-                window_name = f"Unknown Face {idx + 1}"
-                bgr_img = cv2.cvtColor(face_img, cv2.COLOR_RGB2BGR)
-                cv2.imshow(window_name, bgr_img)
-                name = input(f"Nhập tên cho {window_name}: ").strip()
-                if name:
-                    database.add_face(name, embedding, filename=f"capture_{idx}.jpg")
-                    print(f"Đã thêm {name} vào PostgreSQL.")
-                cv2.destroyWindow(window_name)
-            unknown_faces.clear()
-
-        if key == ord("q"):
-            break
-
-    camera.release()
-    cv2.destroyAllWindows()
-    database.close()
+            cv2.imshow("Face Recognition", frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("a") and unknown_faces:
+                _register_unknown(services, unknown_faces)
+                unknown_faces.clear()
+            elif key == ord("q"):
+                break
+    finally:
+        camera.release()
+        cv2.destroyAllWindows()
+        services.database.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

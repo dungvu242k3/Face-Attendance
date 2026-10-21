@@ -6,6 +6,7 @@
   <h3 class="text-xl font-bold text-gray-800 mb-6">Thêm Nhân Viên Mới</h3>
 
   <form id="formAddEmployee" class="grid grid-cols-1 md:grid-cols-2 gap-6" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-2">Họ và Tên *</label>
       <input type="text" name="name" required
@@ -30,9 +31,8 @@
     <div class="md:col-span-2">
       <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh Nhân Viên *</label>
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-        <input type="file" name="face_image" accept="image/*" class="hidden" id="faceFile"
-               onchange="previewFace(event)">
-        <input type="hidden" name="face_image_webcam" id="faceImageWebcam"> 
+        <input type="file" name="face_image" accept="image/*" class="hidden" id="faceFile">
+        <input type="hidden" name="face_image_webcam" id="faceImageWebcam">
 
         <div id="previewWrap" class="mb-4">
           <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,24 +46,24 @@
         </div>
 
         <div class="flex justify-center space-x-3">
-          <button type="button" onclick="document.getElementById('faceFile').click()"
+          <button type="button" id="chooseFaceBtn"
                   class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
             📂 Chọn Ảnh
           </button>
-          <button type="button" onclick="openCamera()"
+          <button type="button" id="openCameraBtn"
                   class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg">
             📷 Chụp Ảnh
           </button>
         </div>
 
         <div id="cameraWrap" class="hidden mt-4 text-center">
-          <video id="camera" autoplay class="w-64 h-48 border rounded-lg mx-auto"></video>
+          <video id="camera" autoplay playsinline class="w-64 h-48 border rounded-lg mx-auto"></video>
           <div class="mt-3 space-x-3">
-            <button type="button" onclick="capturePhoto()"
+            <button type="button" id="capturePhotoBtn"
                     class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
               📸 Chụp
             </button>
-            <button type="button" onclick="closeCamera()"
+            <button type="button" id="closeCameraBtn"
                     class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
               ❌ Đóng
             </button>
@@ -82,77 +82,5 @@
   </form>
 </div>
 
-<script>
-function previewFace(e) {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    document.getElementById('previewWrap').innerHTML = `
-      <img src="${reader.result}" class="w-32 h-32 object-cover rounded-lg mx-auto mb-3 border">
-      <p class="text-green-600 text-sm">Ảnh đã chọn</p>`;
-  };
-  reader.readAsDataURL(file);
-}
-
-let stream;
-async function openCamera() {
-  const wrap = document.getElementById('cameraWrap');
-  wrap.classList.remove('hidden');
-  stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  document.getElementById('camera').srcObject = stream;
-}
-function closeCamera() {
-  document.getElementById('cameraWrap').classList.add('hidden');
-  if (stream) stream.getTracks().forEach(t => t.stop());
-}
-function capturePhoto() {
-  const video = document.getElementById('camera');
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  const dataUrl = canvas.toDataURL("image/png");
-  document.getElementById('previewWrap').innerHTML = `
-    <img src="${dataUrl}" class="w-32 h-32 object-cover rounded-lg mx-auto mb-3 border">
-    <p class="text-green-600 text-sm">Ảnh đã chụp</p>`;
-  document.getElementById('faceImageWebcam').value = dataUrl;
-  closeCamera();
-}
-
-async function resizeImage(base64Str, maxWidth = 800, maxHeight = 800) {
-  return new Promise((resolve) => {
-    let img = new Image();
-    img.src = base64Str;
-    img.onload = () => {
-      let canvas = document.createElement('canvas');
-      let ctx = canvas.getContext('2d');
-      let ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", 0.8)); 
-    };
-  });
-}
-
-document.getElementById('formAddEmployee').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const form = ev.target;
-  const fd = new FormData(form);
-
-  const webcamInput = form.querySelector('#faceImageWebcam');
-  if (webcamInput && webcamInput.value) {
-    const resized = await resizeImage(webcamInput.value);
-    fd.set("face_image_webcam", resized);
-  }
-
-  const res = await fetch("{{ url_for('add_employee') }}", { method: "POST", body: fd });
-  const data = await res.json();
-  alert(data.message || "Xong");
-  if (data.status === 'ok') window.location.href = "{{ url_for('employees') }}";
-});
-</script>
+<script src="{{ url_for('static', filename='js/add_employee.js') }}"></script>
 {% endblock %}

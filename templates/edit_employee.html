@@ -5,6 +5,7 @@
   <h3 class="text-xl font-bold text-gray-800 mb-6">Sửa Thông Tin Nhân Viên #{{ employee[0] }}</h3>
 
   <form id="formEditEmployee" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-2">Họ và Tên</label>
       <input type="text" name="name" value="{{ employee[1] }}" required
@@ -35,19 +36,5 @@
   </form>
 </div>
 
-<script>
-document.getElementById('formEditEmployee').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const fd = new FormData(ev.target);
-  const res = await fetch(location.pathname, { method: "POST", body: fd });
-  const data = await res.json();
-
-  if (data.success) {
-    window.location.href = "/admin/employees";
-  } else {
-    alert(data.message || "Cập nhật thất bại");
-  }
-});
-</script>
-
+<script src="{{ url_for('static', filename='js/edit_employee.js') }}"></script>
 {% endblock %}
